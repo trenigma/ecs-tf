@@ -1,0 +1,1 @@
+creates a Fargate cluster on AWS ECS using Terraform. use for learning stuff.
