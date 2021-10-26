@@ -90,6 +90,7 @@ resource "aws_route_table_association" "private" {
   route_table_id = element(aws_route_table.private.*.id, count.index)
 }
 
+# ALB security group
 resource "aws_security_group" "lb" {
   name   = "ecs-alb-security-group"
   vpc_id = aws_vpc.ecs_tf.id
@@ -102,18 +103,26 @@ resource "aws_security_group" "lb" {
   }
 
   egress {
-    from_port   = 0
+    from_port   = 0 # any port
     to_port     = 0
-    protocol    = "-1"
+    protocol    = "-1" # any protocol
     cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = {
+    Name = "ecs-lb-sg"
   }
 }
 
-# load balancer
+# ALB 
 resource "aws_lb" "ecs_lb" {
   name            = "ecs-lb"
   subnets         = aws_subnet.public.*.id
   security_groups = [aws_security_group.lb.id]
+
+  tags = {
+    Name = "ecs-tf-alb"
+  }
 }
 
 resource "aws_lb_target_group" "hello_world" {
@@ -122,6 +131,10 @@ resource "aws_lb_target_group" "hello_world" {
   protocol    = "HTTP"
   vpc_id      = aws_vpc.ecs_tf.id
   target_type = "ip"
+
+  tags = {
+    Name = "ecs-tf-alb-target-group"
+  }
 }
 
 resource "aws_lb_listener" "hello_world" {
@@ -132,6 +145,9 @@ resource "aws_lb_listener" "hello_world" {
   default_action {
     target_group_arn = aws_lb_target_group.hello_world.id
     type             = "forward"
+  }
+  tags = {
+    Name = "ecs-tf-alb-listener"
   }
 }
 
@@ -160,6 +176,10 @@ resource "aws_ecs_task_definition" "hello_world" {
   }
 ]
 DEFINITION
+
+  tags = {
+    Name = "ecs-tf-task-definition"
+  }
 }
 
 resource "aws_security_group" "hello_world_task" {
@@ -178,6 +198,10 @@ resource "aws_security_group" "hello_world_task" {
     from_port   = 0
     to_port     = 0
     cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = {
+    Name = "ecs-task-hello-world-sg"
   }
 }
 
@@ -205,6 +229,10 @@ resource "aws_ecs_service" "hello_world" {
   }
 
   depends_on = [aws_lb_listener.hello_world]
+
+  tags = {
+    Name = "ecs-service-hello-world"
+  }
 }
 
 
